@@ -1,0 +1,64 @@
+scrapy爬虫startproject中代码分析
+import scrapy
+from scrapy import Selector
+
+from ..items import MovieItem
+
+
+class DoubanSpider(scrapy.Spider):
+    name = "douban"
+    allowed_domains = ["movie.douban.com"]
+    start_urls = ['https://movie.douban.com/top250']
+ def parse(self, response):
+        sel =Selector(response)
+        list_items = sel.css('#content > div > div.article > ol > li')
+        for list_item in list_items:
+            movie_item = MovieItem()
+            movie_item['title'] = list_item.css('span.title::text').extract_first
+            movie_item['rank'] = list_item.css('span.rating_num::text').extract_first
+            movie_item['subject'] = list_item.css('span.inq::text').extract_first
+            yield movie_item
+
+出现了问题，下面是Ai进行改进的更全
+
+import scrapy  
+from scrapy import Selector  
+from scrapy.http import HtmlResponse  
+from ..items import MovieItem  
+import logging  
+  
+class DoubanSpider(scrapy.Spider):  
+    name = "douban"  
+    allowed_domains = ["movie.douban.com"]  
+    start_urls = ['https://movie.douban.com/top250']  
+    custom_settings = {  
+        'USER_AGENT': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',  
+        'ROBOTSTXT_OBEY': False,  # 请确保您有权忽略robots.txt  
+        'DOWNLOAD_DELAY': 0.5  # 0.5秒的下载延迟  
+    }  
+  
+    def start_requests(self):  
+        urls = [  
+            'https://movie.douban.com/top250?start=%s&filter=' % i for i in range(0, 250, 25)  
+        ]  
+        for url in urls:  
+            yield scrapy.Request(url=url, callback=self.parse)  
+  
+    def parse(self, response: HtmlResponse):  
+        sel = Selector(response)  
+        list_items = sel.css('#content > div > div.article > ol > li')  
+        for list_item in list_items:  
+            movie_item = MovieItem()  
+            movie_item['title'] = list_item.css('span.title::text').extract_first()  
+            movie_item['rank'] = list_item.css('span.rating_num::text').extract_first()  
+            movie_item['subject'] = list_item.css('span.inq::text').extract_first()  
+            yield movie_item  
+          
+        # 日志记录  
+        logging.info(f"Parsed page {response.url}")
+
+
+
+
+
+   
